@@ -25,75 +25,82 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: BlocBuilder<UserListBloc, List<User>>(
-        bloc: BlocProvider.of<UserListBloc>(context),
+      body: BlocBuilder<UserListBloc, UserListState>(
         builder: (context, state) {
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 10, bottom: 10),
-            itemCount: state.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                leading: Text(
-                  '$index',
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
-                ),
-                title: Text(
-                  state[index].username,
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  state[index].email,
-                  style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
-                ),
-                trailing: SizedBox(
-                  height: 30,
-                  width: 100,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (context) => ChangeListModalBottomSheet(
-                              isEdit: true,
-                              userEdit: state[index],
-                            ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.mode_edit_outline_outlined,
-                          color: Colors.blue,
-                          size: 22,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          BlocProvider.of<UserListBloc>(context)
-                              .deleteUser(state[index]);
-                        },
-                        icon: const Icon(
-                          Icons.delete,
-                          color: Colors.redAccent,
-                          size: 22,
-                        ),
-                      )
-                    ],
+          if (state is UserListUpdated && state.users.isNotEmpty) {
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 10, bottom: 10),
+              itemCount: state.users.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  leading: Text(
+                    '$index',
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
                   ),
-                ),
-              );
-            },
-          );
+                  title: Text(
+                    state.users[index].username,
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    state.users[index].email,
+                    style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  trailing: SizedBox(
+                    height: 30,
+                    width: 100,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (context) => ChangeListModalBottomSheet(
+                                isEdit: true,
+                                userEdit: state.users[index],
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.mode_edit_outline_outlined,
+                            color: Colors.blue,
+                            size: 22,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            BlocProvider.of<UserListBloc>(context)
+                                .add(DeleteUser(user: state.users[index]));
+                          },
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.redAccent,
+                            size: 22,
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }
 
-          // return const CircularProgressIndicator();
+          return const SizedBox(
+            width: double.infinity,
+            height: double.infinity,
+            child: Center(
+              child: Text('No users'),
+            ),
+          );
         },
       ),
       bottomSheet: GestureDetector(
@@ -177,13 +184,15 @@ class ChangeListModalBottomSheet extends StatelessWidget {
               if (isEdit) {
                 userEdit!.setUsername = controllerUsername.text;
                 userEdit!.setEmail = controllerEmail.text;
-                BlocProvider.of<UserListBloc>(context).updateUser(userEdit!);
+                BlocProvider.of<UserListBloc>(context)
+                    .add(UpdateUser(user: userEdit!));
               } else {
                 final userAdd = User(
                     username: controllerUsername.text,
                     email: controllerEmail.text,
                     id: DateTime.now().toString());
-                BlocProvider.of<UserListBloc>(context).addUser(userAdd);
+                BlocProvider.of<UserListBloc>(context)
+                    .add(AddUser(user: userAdd));
               }
               Navigator.pop(context);
             },

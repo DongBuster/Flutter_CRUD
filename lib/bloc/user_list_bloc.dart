@@ -1,27 +1,34 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_crud/model/user.dart';
 part 'user_list_event.dart';
 part 'user_list_state.dart';
 
-class UserListBloc extends Cubit<List<User>> {
-  UserListBloc() : super([]);
-  void addUser(User user) {
-    emit([...state, user]);
+class UserListBloc extends Bloc<UserListEvent, UserListState> {
+  UserListBloc() : super(UserListInitial(users: [])) {
+    on<AddUser>((event, emit) => addUser(event, emit));
+    on<DeleteUser>((event, emit) => deleteUser(event, emit));
+    on<UpdateUser>((event, emit) => updateUser(event, emit));
   }
 
-  void deleteUser(User user) {
-    state.remove(user);
-    emit([...state]);
+  void addUser(AddUser event, Emitter<UserListState> emit) {
+    state.users.add(event.user);
+    emit(UserListUpdated(users: state.users));
   }
 
-  void updateUser(User user) {
-    for (var i = 0; i < state.length; i++) {
-      if (state[i].id == user.id) {
-        print(user.username);
-        state[i] = user;
+  void deleteUser(DeleteUser event, Emitter<UserListState> emit) {
+    state.users.remove(event.user);
+    emit(UserListUpdated(users: state.users));
+  }
+
+  void updateUser(UpdateUser event, Emitter<UserListState> emit) {
+    for (var i = 0; i < state.users.length; i++) {
+      if (state.users[i].id == event.user.id) {
+        // print(user.username);
+        state.users[i] = event.user;
       }
     }
-    emit([...state]);
+    emit(UserListUpdated(users: state.users));
   }
 }
