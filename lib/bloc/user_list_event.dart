@@ -3,6 +3,8 @@ part of 'user_list_bloc.dart';
 @immutable
 abstract class UserListEvent {}
 
+class LoadLocalUser extends UserListEvent {}
+
 class AddUser extends UserListEvent {
   final User user;
   AddUser({required this.user});

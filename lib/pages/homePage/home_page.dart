@@ -1,6 +1,12 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_crud/pages/detailPage/detail_page.dart';
+import 'package:intl/intl.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import 'package:flutter_crud/bloc/user_list_bloc.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../model/user.dart';
 
@@ -14,6 +20,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
+    BlocProvider.of<UserListBloc>(context).add(LoadLocalUser());
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -32,73 +40,27 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.only(top: 10, bottom: 10),
               itemCount: state.users.length,
               itemBuilder: (context, index) {
-                return ListTile(
-                  leading: Text(
-                    '$index',
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  title: Text(
-                    state.users[index].username,
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    state.users[index].email,
-                    style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  trailing: SizedBox(
-                    height: 30,
-                    width: 100,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (context) => ChangeListModalBottomSheet(
-                                isEdit: true,
-                                userEdit: state.users[index],
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.mode_edit_outline_outlined,
-                            color: Colors.blue,
-                            size: 22,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            BlocProvider.of<UserListBloc>(context)
-                                .add(DeleteUser(user: state.users[index]));
-                          },
-                          icon: const Icon(
-                            Icons.delete,
-                            color: Colors.redAccent,
-                            size: 22,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                );
+                return ItemList(
+                    index: index,
+                    username: state.users[index].username,
+                    email: state.users[index].email,
+                    user: state.users[index]);
               },
             );
           }
-
-          return const SizedBox(
-            width: double.infinity,
-            height: double.infinity,
-            child: Center(
-              child: Text('No users'),
+          if (state.users.isEmpty) {
+            return const SizedBox(
+              width: double.infinity,
+              height: double.infinity,
+              child: Center(
+                child: Text('No users'),
+              ),
+            );
+          }
+          return Center(
+            child: LoadingAnimationWidget.dotsTriangle(
+              color: Colors.blue,
+              size: 30,
             ),
           );
         },
@@ -112,14 +74,92 @@ class _HomePageState extends State<HomePage> {
                 )),
         child: Container(
           margin: const EdgeInsets.only(bottom: 15),
-          width: 60,
-          height: 25,
+          width: 80,
+          height: 27,
           decoration: BoxDecoration(
               color: Colors.green, borderRadius: BorderRadius.circular(5)),
           alignment: Alignment.center,
           child: const Text(
-            'Edit',
+            'Add user',
             style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ItemList extends StatelessWidget {
+  final int index;
+  String username;
+  String email;
+  User user;
+  ItemList({
+    super.key,
+    required this.index,
+    required this.username,
+    required this.email,
+    required this.user,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => DetailPage(user: user))),
+      child: ListTile(
+        leading: Text(
+          '$index',
+          style: const TextStyle(
+            color: Colors.greenAccent,
+            fontSize: 18,
+          ),
+        ),
+        title: Text(
+          username,
+          style: const TextStyle(
+              color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          email,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 18,
+          ),
+        ),
+        trailing: SizedBox(
+          height: 30,
+          width: 100,
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => ChangeListModalBottomSheet(
+                      isEdit: true,
+                      userEdit: user,
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.mode_edit_outline_outlined,
+                  color: Colors.blue,
+                  size: 22,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  BlocProvider.of<UserListBloc>(context)
+                      .add(DeleteUser(user: user));
+                },
+                icon: const Icon(
+                  Icons.delete,
+                  color: Colors.redAccent,
+                  size: 22,
+                ),
+              )
+            ],
           ),
         ),
       ),
@@ -187,10 +227,14 @@ class ChangeListModalBottomSheet extends StatelessWidget {
                 BlocProvider.of<UserListBloc>(context)
                     .add(UpdateUser(user: userEdit!));
               } else {
+                var uuid = const Uuid();
                 final userAdd = User(
-                    username: controllerUsername.text,
-                    email: controllerEmail.text,
-                    id: DateTime.now().toString());
+                  username: controllerUsername.text,
+                  email: controllerEmail.text,
+                  id: uuid.v1(),
+                  createAt: DateFormat('HH:mm:ss - dd/MM/yyyy')
+                      .format(DateTime.now()),
+                );
                 BlocProvider.of<UserListBloc>(context)
                     .add(AddUser(user: userAdd));
               }
